@@ -1,0 +1,37 @@
+{
+  "name": "relaydesk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A TypeScript reference service for signed webhook intake, durable delivery and recovery.",
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run build && npm run lint && npm run format:check && npm test",
+    "demo": "tsx scripts/demo.ts"
+  },
+  "dependencies": {
+    "fastify": "^5.12.5",
+    "@fastify/static": "^10.1.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "eslint": "^10.11.0",
+    "prettier": "^3.9.9",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.2",
+    "@vitest/coverage-v8": "^5.0.2"
+  }
+}

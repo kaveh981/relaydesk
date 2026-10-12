@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="RelayDesk delivery operations: signed webhook intake, durable retries, and dead-letter recovery."
+    />
+    <title>RelayDesk · Delivery operations</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to delivery operations</a>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/" aria-label="RelayDesk home">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span>RelayDesk<span class="brand-dot">.</span></span>
+        </a>
+        <div class="topbar-right">
+          <span class="environment" id="environment">Local operations</span
+          ><span class="connection-state" id="connection-state"
+            ><span class="connection-dot" aria-hidden="true"></span
+            ><span id="connection-label">Not connected</span></span
+          >
+        </div>
+      </div>
+    </header>
+    <main id="main" class="shell">
+      <section class="page-heading" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">DELIVERY OPERATIONS</p>
+          <h1 id="page-title">Every event. Accounted for.</h1>
+          <p class="page-intro">
+            Follow a webhook from intake to delivery. Inspect failures, retries, and recovery in one
+            place.
+          </p>
+        </div>
+        <div class="sync-tools">
+          <span id="sync-time">Live data after connection</span
+          ><button class="button button-quiet" id="refresh-button" type="button" disabled>
+            <span aria-hidden="true">↻</span> Refresh
+          </button>
+        </div>
+      </section>
+
+      <section class="connection-panel" id="connection-panel" aria-labelledby="connection-title">
+        <div class="connection-copy">
+          <h2 id="connection-title">Connect to your delivery queue</h2>
+          <p>
+            Enter the admin key configured for this instance. It stays in memory for this session.
+          </p>
+          <p class="demo-key">Local demo key: <code>sample-admin-key-change-me</code></p>
+        </div>
+        <form id="connection-form" class="connection-form">
+          <label for="admin-key">Admin API key</label>
+          <div class="input-action">
+            <input
+              id="admin-key"
+              name="admin-key"
+              type="password"
+              required
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Enter your admin key"
+              aria-describedby="key-help"
+            /><button class="button button-primary" id="connect-button" type="submit">
+              Connect
+            </button>
+          </div>
+          <span id="key-help" class="field-note"
+            >Sent only in the request header. Never saved in your browser.</span
+          >
+        </form>
+      </section>
+      <div class="session-bar" id="session-bar" hidden>
+        <span
+          ><span class="small-dot" aria-hidden="true"></span>Authenticated session
+          <span class="session-note">· key held in memory</span></span
+        ><button type="button" id="disconnect-button" class="text-button">Disconnect</button>
+      </div>
+      <div class="notice notice-error" id="error-notice" role="alert" hidden>
+        <span class="notice-icon" aria-hidden="true">!</span><span id="error-text"></span>
+      </div>
+      <p
+        class="action-status"
+        id="action-status"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      ></p>
+
+      <section class="metrics" aria-label="Live delivery counts">
+        <article class="metric metric-total">
+          <span class="metric-label">Total events</span><strong id="count-total">—</strong
+          ><span class="metric-note">Unique deliveries</span>
+        </article>
+        <article class="metric">
+          <span class="metric-label"
+            ><span class="status-dot pending" aria-hidden="true"></span>Pending</span
+          ><strong id="count-pending">—</strong><span class="metric-note">Awaiting a worker</span>
+        </article>
+        <article class="metric">
+          <span class="metric-label"
+            ><span class="status-dot processing" aria-hidden="true"></span>Processing</span
+          ><strong id="count-processing">—</strong
+          ><span class="metric-note">Attempt in flight</span>
+        </article>
+        <article class="metric">
+          <span class="metric-label"
+            ><span class="status-dot retrying" aria-hidden="true"></span>Retrying</span
+          ><strong id="count-retrying">—</strong
+          ><span class="metric-note">Scheduled to try again</span>
+        </article>
+        <article class="metric">
+          <span class="metric-label"
+            ><span class="status-dot delivered" aria-hidden="true"></span>Delivered</span
+          ><strong id="count-delivered">—</strong><span class="metric-note">Receiver accepted</span>
+        </article>
+        <article class="metric">
+          <span class="metric-label"
+            ><span class="status-dot dead" aria-hidden="true"></span>Dead letter</span
+          ><strong id="count-dead">—</strong><span class="metric-note">Ready for review</span>
+        </article>
+      </section>
+
+      <section class="demo-panel" id="demo-panel" hidden aria-labelledby="demo-title">
+        <div class="demo-icon" aria-hidden="true">↗</div>
+        <div class="demo-copy">
+          <p class="eyebrow">TRY THE DELIVERY LIFECYCLE</p>
+          <h2 id="demo-title">Three events. Four outcomes.</h2>
+          <p>
+            One succeeds immediately. One fails twice, then succeeds. One fails permanently. A
+            duplicate is submitted to verify suppression.
+          </p>
+        </div>
+        <button class="button button-primary" id="demo-button" type="button">
+          Run demo scenario <span aria-hidden="true">→</span>
+        </button>
+      </section>
+
+      <div class="workspace">
+        <section class="panel events-panel" aria-labelledby="events-title">
+          <div class="panel-heading">
+            <div>
+              <h2 id="events-title">
+                Delivery queue <span class="count-badge" id="event-count">0</span>
+              </h2>
+              <p>Inspect an event to see its delivery history.</p>
+            </div>
+            <span class="live-indicator" id="live-indicator" hidden
+              ><span aria-hidden="true"></span>Live · 2s</span
+            >
+          </div>
+          <div class="table-controls">
+            <div class="search-field">
+              <label class="sr-only" for="event-search">Search events by type or ID</label
+              ><span aria-hidden="true">⌕</span
+              ><input
+                id="event-search"
+                type="search"
+                placeholder="Search event type or ID…"
+                autocomplete="off"
+              />
+            </div>
+            <label class="sr-only" for="status-filter">Filter by delivery status</label
+            ><select id="status-filter">
+              <option value="all">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="retrying">Retrying</option>
+              <option value="delivered">Delivered</option>
+              <option value="dead">Dead letter</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <caption class="sr-only">
+                Webhook events and their current delivery status
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Event</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Attempts</th>
+                  <th scope="col">Updated</th>
+                </tr>
+              </thead>
+              <tbody id="events-body"></tbody>
+            </table>
+          </div>
+          <div class="empty-state" id="queue-empty">
+            <span class="empty-symbol" aria-hidden="true">≋</span>
+            <h3 id="empty-title">Your queue is waiting.</h3>
+            <p id="empty-description">Connect with an admin key to inspect live deliveries.</p>
+          </div>
+          <div class="table-footer">
+            <span id="table-summary">No delivery data loaded</span
+            ><span>Click an event to inspect <span aria-hidden="true">→</span></span>
+          </div>
+        </section>
+
+        <aside class="panel detail-panel" aria-labelledby="detail-title">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">EVENT INSPECTOR</p>
+              <h2 id="detail-title">Delivery details</h2>
+            </div>
+            <span class="inspector-mark" aria-hidden="true">↗</span>
+          </div>
+          <div class="detail-empty" id="detail-empty">
+            <span class="empty-symbol" aria-hidden="true">⌁</span>
+            <h3>A clear trail for every event.</h3>
+            <p>Select a delivery to see attempts, response codes, and the next recovery action.</p>
+          </div>
+          <div id="detail-content" hidden>
+            <div class="detail-summary">
+              <div class="detail-type-row">
+                <h3 id="detail-type"></h3>
+                <span id="detail-status"></span>
+              </div>
+              <p class="mono detail-id" id="detail-id"></p>
+              <dl class="detail-facts">
+                <div>
+                  <dt>Attempts this cycle</dt>
+                  <dd id="detail-attempts"></dd>
+                </div>
+                <div>
+                  <dt>Delivery cycle</dt>
+                  <dd id="detail-generation"></dd>
+                </div>
+                <div>
+                  <dt>Created</dt>
+                  <dd id="detail-created"></dd>
+                </div>
+                <div>
+                  <dt>Next attempt</dt>
+                  <dd id="detail-next"></dd>
+                </div>
+              </dl>
+              <div class="failure-note" id="detail-error" hidden>
+                <span class="failure-label">Latest failure</span>
+                <p id="detail-error-text"></p>
+              </div>
+              <div class="recovery-actions" id="recovery-actions" hidden>
+                <button class="button button-primary" id="recover-button" type="button" hidden>
+                  Fix demo receiver & replay</button
+                ><button class="button button-secondary" id="replay-button" type="button">
+                  Replay delivery
+                </button>
+                <p>Replay starts a new delivery cycle and keeps the existing history.</p>
+              </div>
+            </div>
+            <div class="timeline-section">
+              <div class="section-heading">
+                <h3>Attempt history</h3>
+                <span id="attempt-count" class="muted"></span>
+              </div>
+              <ol class="timeline" id="attempt-history"></ol>
+              <p class="history-empty" id="history-empty" hidden>No delivery attempts yet.</p>
+            </div>
+            <details class="payload-section">
+              <summary>Event payload <span aria-hidden="true">{ }</span></summary>
+              <pre id="event-payload" tabindex="0" aria-label="Event payload JSON"></pre>
+            </details>
+          </div>
+        </aside>
+      </div>
+
+      <section class="architecture panel" aria-labelledby="architecture-title">
+        <div class="architecture-heading">
+          <p class="eyebrow">BUILT FOR THE WHOLE LIFECYCLE</p>
+          <h2 id="architecture-title">Intake is only the beginning.</h2>
+        </div>
+        <ol class="flow">
+          <li>
+            <span class="flow-number">01</span>
+            <div>
+              <h3>Verify & accept</h3>
+              <p>Signed intake · duplicate detection</p>
+            </div>
+          </li>
+          <li>
+            <span class="flow-number">02</span>
+            <div>
+              <h3>Persist & claim</h3>
+              <p>Durable state · worker ownership</p>
+            </div>
+          </li>
+          <li>
+            <span class="flow-number">03</span>
+            <div>
+              <h3>Deliver & retry</h3>
+              <p>Attempt history · bounded retries</p>
+            </div>
+          </li>
+          <li>
+            <span class="flow-number">04</span>
+            <div>
+              <h3>Inspect & recover</h3>
+              <p>Dead letters · explicit replay</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+      <footer class="page-footer">
+        <span><strong>RelayDesk</strong> · TypeScript reference project</span
+        ><span>Real API data. Synthetic demo events.</span>
+      </footer>
+    </main>
+    <noscript
+      ><p class="noscript-notice">
+        JavaScript is required to connect to the delivery queue. The backend API remains available
+        independently.
+      </p></noscript
+    >
+  </body>
+</html>
