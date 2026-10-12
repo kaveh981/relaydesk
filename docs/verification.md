@@ -13,7 +13,7 @@ Verified locally on **13 October 2026**. This records checks performed on this r
 | Narrow layout check                   | At a 390px viewport, document width was 390px with no horizontal page overflow                                                                                                                                            |
 | Dependency audit during installation  | No known vulnerabilities reported by npm at that time                                                                                                                                                                     |
 | Docker execution                      | Not run; Docker was unavailable                                                                                                                                                                                           |
-| GitHub CI                             | Configured; not run before publication                                                                                                                                                                                    |
+| GitHub CI                             | First public run passed for Node 24 and 26 on Ubuntu: [run 38310668696](https://github.com/kaveh981/relaydesk/actions/runs/38310668696), commit `d152f89`                                                                 |
 
 The screenshot in the README is captured from the actual local service with synthetic records. It shows a successful retry sequence and a separate delivery awaiting recovery. Demo receiver fault counters are intentionally in memory; the queue and attempt history are persisted in SQLite.
 

@@ -4,6 +4,8 @@
 
 TypeScript webhook delivery service with signed intake, a SQLite queue, bounded retries, dead-letter replay, lease recovery, and an operations dashboard.
 
+**Public repository:** [github.com/kaveh981/relaydesk](https://github.com/kaveh981/relaydesk)
+
 ## Profile project title
 
 RelayDesk — Durable Webhook Delivery and Recovery
@@ -14,7 +16,7 @@ Independent TypeScript/Node.js reference project for API integration reliability
 
 ## Application paragraph
 
-My public sample, RelayDesk, demonstrates how I approach backend integration work: signed HTTP intake, explicit duplicate and conflict handling, durable state, bounded retries, and clear operational recovery. It includes a runnable synthetic demo and tests so you can inspect behavior rather than rely on a feature list. I can walk through the tradeoffs and adapt the approach to a defined integration requirement after reviewing your system.
+My public sample, [RelayDesk](https://github.com/kaveh981/relaydesk), demonstrates how I approach backend integration work: signed HTTP intake, explicit duplicate and conflict handling, durable state, bounded retries, and clear operational recovery. It includes a runnable synthetic demo and tests so you can inspect behavior rather than rely on a feature list. I can walk through the tradeoffs and adapt the approach to a defined integration requirement after reviewing your system.
 
 ## Suggested repository topics
 

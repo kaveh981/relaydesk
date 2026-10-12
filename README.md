@@ -1,5 +1,7 @@
 # RelayDesk
 
+[![CI](https://github.com/kaveh981/relaydesk/actions/workflows/ci.yml/badge.svg)](https://github.com/kaveh981/relaydesk/actions/workflows/ci.yml)
+
 **A signed webhook delivery service with a durable queue and an operations dashboard.**
 
 RelayDesk accepts a signed event, records it before acknowledging receipt, and delivers it to a configured receiver. It makes the difficult cases visible: duplicate events, conflicting payloads, temporary failures, exhausted retries, and a worker disappearing before its result is recorded.
@@ -87,7 +89,7 @@ npm run check
 npm run test:coverage
 ```
 
-`check` compiles TypeScript, runs ESLint, checks formatting, and runs the tests. Coverage is generated from the tests; no coverage percentage is hard-coded in this README. The [CI workflow](.github/workflows/ci.yml) is configured for Node 24 and 26. A workflow configuration alone is not evidence that a GitHub run has passed.
+`check` compiles TypeScript, runs ESLint, checks formatting, and runs the tests. Coverage is generated from the tests; no coverage percentage is hard-coded in this README. The [CI workflow](.github/workflows/ci.yml) runs on Node 24 and 26. Inspect the [latest CI runs](https://github.com/kaveh981/relaydesk/actions/workflows/ci.yml) and the [verification record](docs/verification.md) for the checks actually performed.
 
 ## Configuration
 
